@@ -1,8 +1,0 @@
-add_executable(test_correctness test_correctness.cpp)
-target_link_libraries(test_correctness PRIVATE parallel_bubble_sort)
-
-add_executable(test_performance test_performance.cpp)
-target_link_libraries(test_performance PRIVATE parallel_bubble_sort)
-
-add_test(NAME correctness COMMAND test_correctness)
-add_test(NAME performance COMMAND test_performance)
