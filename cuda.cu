@@ -7,19 +7,6 @@
 using namespace std;
 
 // =====================================================
-// CPU SEQUENTIAL BUBBLE SORT
-// =====================================================
-void bubbleSeq(vector<float>& a, int n){
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n - 1; j++){
-            if(a[j] > a[j + 1]){
-                swap(a[j], a[j + 1]);
-            }
-        }
-    }
-}
-
-// =====================================================
 // CUDA KERNEL (ODD-EVEN SORT)
 // =====================================================
 __global__ void oddEvenKernel(float* d_a, int n, int phase){
@@ -48,19 +35,7 @@ int main(){
         h_cpu[i] = rand() % 100000;
         h_gpu[i] = h_cpu[i];
     }
-
-    // =====================================================
-    // CPU TIMER
-    // =====================================================
-    auto start_cpu = chrono::high_resolution_clock::now();
-
-    bubbleSeq(h_cpu, N);
-
-    auto end_cpu = chrono::high_resolution_clock::now();
-
-    double cpu_time =
-        chrono::duration<double>(end_cpu - start_cpu).count();
-
+    
     // =====================================================
     // GPU SETUP
     // =====================================================
@@ -111,12 +86,7 @@ int main(){
     // =====================================================
 
     double gpu_time_sec = gpu_time / 1000.0;
-
-    double speedup = cpu_time / gpu_time_sec;
-
     double total_ops = (double)N * (double)N; // O(n^2)
-
-    double cpu_perf = total_ops / cpu_time;
     double gpu_perf = total_ops / gpu_time_sec;
 
     // =====================================================
@@ -125,18 +95,14 @@ int main(){
 
     cout << "\n========= RESULTS =========\n";
 
-    cout << "CPU Time: " << cpu_time << " sec\n";
     cout << "GPU Time: " << gpu_time_sec << " sec\n";
     cout << "Data Transfer Time: " << transfer_time << " sec\n";
 
     cout << "Total Data Transferred: "
          << (2.0 * size / (1024 * 1024)) << " MB\n";
 
-    cout << "SpeedUp (CPU/GPU): " << speedup << "x\n";
-
     cout << "Total Operations (approx): " << total_ops << "\n";
 
-    cout << "CPU Performance: " << cpu_perf << " ops/sec\n";
     cout << "GPU Performance: " << gpu_perf << " ops/sec\n";
 
     cout << "Execution Time (GPU + transfer): "
