@@ -1,21 +1,3 @@
-- А гишүүн: Дараалсан (Sequential) алгоритм болон OpenMP хувилбарыг хариуцах.
-- Б гишүүн: CUDA програмчлал ашиглан өгөгдөл дамжуулалт болон цөмүүдийн ажиллагааг оновчилж GPU дээрх хувилбарыг хариуцах.
-- В гишүүн: C++ стандарт сан ашиглан Thread-үүдийн удирдлага болон синхрончлолыг хангаж мultithreading хувилбарыг бичих.
-- Г гишүүн эсвэл багийн гишүүд: Тайлан бичих.
+### Codenii hemjeeg n bagasgaad csv file, bolon terminal deer hevlegddeg baisan iig n zassan 
 
-Сонгож авсан сэдвээ group chat дээр бичээрэй
-
-## Хийх зүйлс
-
-Branch ууд
-
-- denhjin
-- menhjin
-- enkush
-- bilguun
-
-Хүн болгон  өөрийн branch-аар сонгож авсан алгоритмаа file дээрээ бичээд push хийнэ.
-
-# Сонгож авсан file аас өөр file өөрчилж болохгүй шүү
-
-# За тэгээд бие даалтын материалаа харж байгаад хийгээрэй
+### bas cvs file deerhi medeeleleer python code oor hartsiulalt hiij tuhain hartsiulaltiin graphiciig uusgej hadgaldag bolgoson   
