@@ -1,5 +1,5 @@
-// sort_compare.cu
-// nvcc -O2 -o sort_compare sort_compare.cu
+// cuda.cu
+// nvcc -O2 -o cuda cuda.cu
 
 #include <iostream>
 #include <vector>
@@ -99,39 +99,66 @@ Metrics runExperiment(int N) {
     return m;
 }
 
-void printDetailed(const Metrics& m) {
-    cout << "\n╔══════════════════════════════════════════════════════════╗\n";
-    cout << "║   N = " << setw(7) << m.N << "  |  Result: " << (m.correct ? "✓ CORRECT" : "✗ FAILED") << "                     ║\n";
-    cout << "╠══════════════════════════════════════════════════════════╣\n";
-    cout << "║  CPU Time                 " << setw(14) << fixed << setprecision(6) << m.cpu_time << "  sec     ║\n";
-    cout << "║  GPU Kernel Time          " << setw(14) << m.gpu_kernel << "  sec     ║\n";
-    cout << "║  Host→Device Transfer     " << setw(14) << m.h2d << "  sec     ║\n";
-    cout << "║  Device→Host Transfer     " << setw(14) << m.d2h << "  sec     ║\n";
-    cout << "║  Total Transfer           " << setw(14) << m.transfer << "  sec     ║\n";
-    cout << "║  GPU Total (kernel+trans) " << setw(14) << m.exec << "  sec     ║\n";
-    cout << "╠══════════════════════════════════════════════════════════╣\n";
-    cout << "║  Data transferred         " << setw(14) << setprecision(3) << m.data_mb << "  MB       ║\n";
-    cout << "║  Total operations (approx)" << setw(14) << scientific << setprecision(3) << m.total_ops << "  ops      ║\n";
-    cout << "╠══════════════════════════════════════════════════════════╣\n";
-    cout << "║  CPU Performance          " << setw(14) << fixed << setprecision(4) << m.cpu_gops << "  GOps/s   ║\n";
-    cout << "║  GPU Performance          " << setw(14) << m.gpu_gops << "  GOps/s   ║\n";
-    cout << "╠══════════════════════════════════════════════════════════╣\n";
-    cout << "║  SpeedUp (CPU/GPU kernel) " << setw(14) << setprecision(2) << m.speedup << "  x        ║\n";
-    cout << "║  Eff.SpeedUp (incl.trans) " << setw(14) << m.eff_speedup << "  x        ║\n";
-    cout << "╚══════════════════════════════════════════════════════════╝\n";
-}
-
-void printSummary(const vector<Metrics>& results) {
-    cout << "\n\n================================= SUMMARY =================================\n";
-    cout << setw(8) << "N" << setw(12) << "CPU(s)" << setw(12) << "GPU(s)" << setw(12) << "Trans(s)"
-         << setw(12) << "GPU tot" << setw(9) << "SpdUp" << setw(9) << "EffSp" << "\n";
-    for (auto& m : results) {
-        cout << setw(8) << m.N << fixed << setprecision(4)
-             << setw(12) << m.cpu_time << setw(12) << m.gpu_kernel << setw(12) << m.transfer
-             << setw(12) << m.exec << setw(9) << setprecision(2) << m.speedup
-             << setw(9) << m.eff_speedup << "\n";
-    }
-    cout << "=============================================================================\n";
+void printDetailed(const Metrics& m, const cudaDeviceProp& prop) {
+    const int col1 = 28;   // Метрийн нэр
+    const int col2 = 22;   // CPU утга
+    const int col3 = 22;   // GPU утга
+    string sep(col1 + col2 + col3, '=');
+    string line(col1 + col2 + col3, '-');
+    
+    cout << "\n" << sep << "\n";
+    cout << "  N = " << m.N << " | GPU: " << prop.name << " | Result: " << (m.correct ? "CORRECT" : "FAILED") << "\n";
+    cout << sep << "\n";
+    cout << left << setw(col1) << "МЕТРИК (Үнэлгээ)"
+         << setw(col2) << "CPU"
+         << setw(col3) << "GPU" << "\n";
+    cout << line << "\n";
+    
+    auto row = [&](const string& name, const string& cpu_val, const string& gpu_val) {
+        cout << left << setw(col1) << name
+             << setw(col2) << cpu_val
+             << setw(col3) << gpu_val << "\n";
+    };
+    
+    auto d2str = [](double v, const string& unit) -> string {
+        ostringstream os;
+        if (v < 0.001) os << fixed << setprecision(3) << v*1000.0 << " " << unit;
+        else if (v < 1.0) os << fixed << setprecision(3) << v*1000.0 << " " << unit;
+        else os << fixed << setprecision(2) << v << " " << unit;
+        return os.str();
+    };
+    
+    // CPU Time
+    row("CPU Time", d2str(m.cpu_time, "sec"), "-");
+    // GPU Kernel Time
+    row("GPU Kernel Time", "-", d2str(m.gpu_kernel, "sec"));
+    // Host→Device Transfer
+    row("Host→Device Transfer  ", "-", d2str(m.h2d, "sec"));
+    // Device→Host Transfer
+    row("Device→Host Transfer  ", "-", d2str(m.d2h, "sec"));
+    // Total Transfer
+    row("Total Transfer", "-", d2str(m.transfer, "sec"));
+    // GPU Total (kernel+transfer)
+    row("GPU Total (kernel+trans)", "-", d2str(m.exec, "sec"));
+    cout << line << "\n";
+    
+    // Data transferred
+    row("Data transferred", "-", d2str(m.data_mb, "MB"));
+    // Total operations
+    string ops_str;
+    if (m.total_ops > 1e9) ops_str = to_string((long long)(m.total_ops/1e9)) + "e9 ops";
+    else if (m.total_ops > 1e6) ops_str = to_string((long long)(m.total_ops/1e6)) + "e6 ops";
+    else ops_str = to_string((long long)m.total_ops) + " ops";
+    row("Total operations", ops_str, ops_str);
+    
+    // Performance
+    row("Performance (GOPS/s)", d2str(m.cpu_gops, "GOPS/s"), d2str(m.gpu_gops, "GOPS/s"));
+    
+    cout << sep << "\n";
+    cout << "  ХАРЬЦУУЛАЛТ / ДҮГНЭЛТ:\n";
+    cout << "  SpeedUp (CPU/GPU kernel)   : " << fixed << setprecision(2) << m.speedup << "x\n";
+    cout << "  Eff.SpeedUp (incl.transfer): " << fixed << setprecision(2) << m.eff_speedup << "x\n";
+    cout << sep << "\n";
 }
 
 void saveCSV(const vector<Metrics>& results, const string& fname) {
@@ -152,16 +179,23 @@ int main() {
     cout << "GPU: " << prop.name << " | SMs: " << prop.multiProcessorCount
          << " | Global: " << prop.totalGlobalMem/(1024*1024) << " MB\n";
 
-    vector<int> sizes = {10000, 50000, 100000};
+    vector<int> sizes = {5000, 10000, 50000, 100000};
     vector<Metrics> results;
     for (int N : sizes) {
         cout << "\n>>> Running N = " << N << " ..." << flush;
         Metrics m = runExperiment(N);
         cout << " done." << endl;
-        printDetailed(m);   // <-- ЭНД БҮРЭН ХҮСНЭГТ ХЭВЛЭНЭ
+        printDetailed(m, prop);
         results.push_back(m);
     }
-    printSummary(results);
     saveCSV(results, "results.csv");
     return 0;
 }
+
+/*
+
+nvcc -O2 cuda.cu -o cuda
+./cuda
+python plot.py
+
+*/
